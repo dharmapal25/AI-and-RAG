@@ -1,3 +1,275 @@
+// // server.js
+
+// require("dotenv").config();
+// const express = require("express");
+// const cors = require("cors");
+// const Groq = require("groq-sdk");
+
+// const app = express();
+
+// app.use(cors({
+//   origin: "http://localhost:5173",
+//   methods: ["GET", "POST", "PUT", "DELETE"],
+//   credentials: true
+// }));
+// app.use(express.json());
+
+// const groq = new Groq({
+//   apiKey: process.env.GROQ_API_KEY,
+// });
+
+// app.post("/api/chat", async (req, res) => {
+//   try {
+//     const { message } = req.body;
+
+//     if (!message) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Message is required",
+//       });
+//     }
+
+//     const completion = await groq.chat.completions.create({
+//       model: "groq/compound",
+
+//       messages: [
+//         {
+//           role: "user",
+//           content: message,
+//         },
+//       ],
+//     });
+
+//     const aiResponse = completion.choices[0]?.message?.content || "No response";
+
+//     res.status(200).json({
+//       success: true,
+//       response: aiResponse,
+//     });
+//   } catch (error) {
+//     console.error(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Something went wrong",
+//     });
+//   }
+// });
+
+
+
+// app.listen(process.env.PORT, () => {
+//   console.log(`Server running on port ${process.env.PORT}`);
+// });
+
+
+
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const Groq = require("groq-sdk");
+
+const app = express();
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+
+app.use(express.json());
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+
+/* =========================
+   GOOGLE STRATEGY
+========================= */
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/callback"
+    },
+    async (accessToken, refreshToken, profile, done) => {
+
+      const user = {
+        id: profile.id,
+        name: profile.displayName,
+        email: profile.emails?.[0]?.value,
+        photo: profile.photos?.[0]?.value
+      };
+
+      return done(null, user);
+    }
+  )
+);
+
+
+/* =========================
+   SESSION
+========================= */
+
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
+});
+
+
+/* =========================
+   AUTH ROUTES
+========================= */
+
+app.get(
+  "/auth/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"]
+  })
+);
+
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "/login"
+  }),
+  (req, res) => {
+
+    res.redirect("http://localhost:5173");
+  }
+);
+
+
+app.get("/api/me", (req, res) => {
+
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({
+      success: false,
+      message: "Not logged in"
+    });
+  }
+
+  res.json({
+    success: true,
+    user: req.user
+  });
+});
+
+
+app.get("/logout", (req, res) => {
+
+  req.logout(() => {
+
+    req.session.destroy(() => {
+
+      res.clearCookie("connect.sid");
+
+      res.json({
+        success: true,
+        message: "Logged out"
+      });
+    });
+  });
+});
+
+
+/* =========================
+   PROTECTED MIDDLEWARE
+========================= */
+
+const isAuthenticated = (req, res, next) => {
+
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  next();
+};
+
+
+/* =========================
+   CHAT API
+========================= */
+
+app.post("/api/chat", isAuthenticated, async (req, res) => {
+
+  try {
+
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Message is required"
+      });
+    }
+
+    const completion = await groq.chat.completions.create({
+      model: "groq/compound",
+      messages: [
+        {
+          role: "user",
+          content: message
+        }
+      ]
+    });
+
+    const aiResponse =
+      completion.choices[0]?.message?.content || "No response";
+
+    res.json({
+      success: true,
+      response: aiResponse
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
+  }
+});
+
+
+app.listen(process.env.PORT, () => {
+  console.log(`Server running on port ${process.env.PORT}`);
+});
+
+
+
+
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import axios from 'axios';
