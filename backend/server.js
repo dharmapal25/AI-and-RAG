@@ -6,9 +6,11 @@ const Router = require('./src/Routers/auth.route');
 const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
+const connectDB = require('./src/config/db');
 
 const app = express();
 
+connectDB();
 
 app.use(session({
   secret: 'your-secret-key',

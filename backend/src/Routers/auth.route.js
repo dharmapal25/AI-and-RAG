@@ -1,5 +1,6 @@
 const express = require('express');
-const { refreshToken, userProfile, loginWithGoogle } = require('../controllers/auth.controller');
+const { refreshToken, userProfile } = require('../controllers/auth.controller');
+const passport = require('passport');
 
 const router = express.Router();
 
@@ -7,9 +8,6 @@ const router = express.Router();
 router.post('/refresh-token', refreshToken);
 
 router.get('/profile', userProfile);
-
-// google login route
-router.get("/google", loginWithGoogle);
 
 // google callback 
 router.get("/google/callback",
