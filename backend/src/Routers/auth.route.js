@@ -22,4 +22,7 @@ router.get("/google/callback",
         res.redirect('/profile');
     })
 
+// Google login route
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
 module.exports = router;

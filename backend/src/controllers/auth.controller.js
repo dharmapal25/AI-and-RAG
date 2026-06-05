@@ -56,9 +56,3 @@ exports.userProfile = async (req, res) => {
             JSON.stringify(req.user, null, 2)}</pre>`
     );
 }
-
-exports.loginWithGoogle = (req, res) => {
-    passport.authenticate('google',
-        {scope : ['profile', 'email'] }
-    )
-}

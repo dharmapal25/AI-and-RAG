@@ -2,10 +2,13 @@
 
 require('dotenv').config();
 const express = require('express');
+const Router = require('./src/Routers/auth.route');
+const cors = require('cors');
 const session = require('express-session');
 const passport = require('passport');
 
 const app = express();
+
 
 app.use(session({
   secret: 'your-secret-key',
@@ -13,9 +16,12 @@ app.use(session({
   saveUninitialized: true,
 }));
 
+app.use(cors());
 app.use(passport.initialize());
 app.use(passport.session());
 
+
+app.use('/auth', Router);
 
 app.get('/', (req, res) => {
   res.send(`
