@@ -14,9 +14,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-console.log(process.env.GROQ_API_KEY);
-console.log(process.env.PORT);
-
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
@@ -58,6 +55,8 @@ app.post("/api/chat", async (req, res) => {
     });
   }
 });
+
+
 
 
 app.listen(process.env.PORT, () => {
