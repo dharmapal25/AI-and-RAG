@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import api, { setAccessToken as setApiAccessToken } from './api';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import remarkGfm from 'remark-gfm';
+import { Bot, UserRound, Copy, Check, Edit3 } from 'lucide-react';
+import 'highlight.js/styles/github-dark.css';
 import './styles.css';
 import Login from './Login';
 
@@ -19,6 +25,18 @@ const App = () => {
 
   // Check if user is logged in on mount
   useEffect(() => {
+    // If the backend redirected with an accessToken in the URL fragment, use it.
+    const hash = window.location.hash;
+    if (hash && hash.includes('accessToken=')) {
+      const params = new URLSearchParams(hash.replace('#', ''));
+      const token = params.get('accessToken');
+      if (token) {
+        setApiAccessToken(token);
+        // remove token from URL for cleanliness
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+
     checkAuthStatus();
   }, []);
 
@@ -31,7 +49,7 @@ const App = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const res = await api.get('/auth/profile');
+      const res = await api.get('/auth/profile', { timeout: 8000 });
       if (res.data.user) {
         setUser(res.data.user);
       }
@@ -47,12 +65,20 @@ const App = () => {
         }
       }
     } catch (err) {
-      console.log('Not logged in');
+      console.error('Auth check failed:', err?.response?.data || err.message || err);
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
+
+  // safety fallback: if auth check hangs for any reason, stop showing the loading screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const loadChats = async () => {
     try {
@@ -172,7 +198,7 @@ const App = () => {
   }
 
   if (!user) {
-    return <Login API_URL={API_URL} />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -239,11 +265,40 @@ const App = () => {
             {messages.length === 0 ? (
               <p className="placeholder">Start a conversation...</p>
             ) : (
-              messages.map((msg, idx) => (
-                <div key={idx} className={`message ${msg.role}`}>
-                  <p>{msg.content}</p>
-                </div>
-              ))
+              messages.map((msg, idx) => {
+                const isUser = msg.role === 'user';
+                const isLoading = !isUser && chatLoading && idx === messages.length - 1;
+                return (
+                  <article key={`${msg.role}-${idx}`} className={`message ${isUser ? 'fromUser' : 'fromAssistant'}`}>
+                    <div className={isUser ? 'avatar userAvatar' : 'avatar assistantAvatar'}>
+                      {isUser ? <UserRound size={17} /> : <Bot size={18} />}
+                    </div>
+                    <div className="messageBody">
+                      {isLoading ? (
+                        <div className="loadingDots" aria-label="Assistant is typing">
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      ) : isUser ? (
+                        <p>{msg.content}</p>
+                      ) : (
+                        <div className="markdownResponse">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>
+                        </div>
+                      )}
+
+                      {!isUser && !isLoading && (
+                        <div className="messageActions" aria-label="Message actions">
+                          <button type="button" aria-label="Copy response"><Copy size={15} /></button>
+                          <button type="button" aria-label="Mark useful"><Check size={15} /></button>
+                          <button type="button" aria-label="Edit response"><Edit3 size={15} /></button>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
 

@@ -6,11 +6,24 @@ const router = express.Router();
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
+const jwt = require('jsonwebtoken');
+
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:5173' }),
+  passport.authenticate('google', { failureRedirect: process.env.FRONTEND_URL || 'http://localhost:5173' }),
   (req, res) => {
-    // Redirect to frontend after successful auth
-    res.redirect('http://localhost:5173');
+    // Create access + refresh tokens and send to frontend via URL fragment (dev-friendly)
+    try {
+      const user = req.user;
+      const accessToken = jwt.sign({ id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+      const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+      res.cookie('refreshToken', refreshToken, { httpOnly: true });
+      const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+      // use hash fragment so token isn't sent to the backend or in Referer
+      res.redirect(`${frontend}/#accessToken=${accessToken}`);
+    } catch (err) {
+      console.error('Callback token error', err);
+      res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173');
+    }
   }
 );
 
