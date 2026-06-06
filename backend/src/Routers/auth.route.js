@@ -4,23 +4,26 @@ const passport = require('passport');
 
 const router = express.Router();
 
-// refresh token route
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('/google/callback',
+  passport.authenticate('google', { failureRedirect: 'http://localhost:5173' }),
+  (req, res) => {
+    // Redirect to frontend after successful auth
+    res.redirect('http://localhost:5173');
+  }
+);
+
 router.post('/refresh-token', refreshToken);
 
 router.get('/profile', userProfile);
 
-// google callback 
-router.get("/google/callback",
-    passport.authenticate('google', {
-        failureRedirect: '/',
-        failureMessage: true
-    }),
-    (req, res) => {
-        console.log('✅ Successfully logged in!');
-        res.redirect('/profile');
-    })
-
-// Google login route
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/logout', (req, res) => {
+  req.logout((err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.clearCookie('refreshToken');
+    res.json({ message: 'Logged out' });
+  });
+});
 
 module.exports = router;

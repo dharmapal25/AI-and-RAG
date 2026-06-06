@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Display name is required'] 
     },
 
-    profiflePicture: { type: String },
+    profilePicture: { type: String },
 
     email: { 
         type: String, 

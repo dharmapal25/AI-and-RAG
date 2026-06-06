@@ -10,6 +10,10 @@ passport.use(new GoogleStrategy({
 }, (accessToken, refreshToken, profile, done) => {
   console.log('✅ Google Auth Success!');
   done(null, profile);
+
+  console.log('Google Profile:', profile);
+
+
 }));
 
 // Session handling
