@@ -166,7 +166,7 @@ const App = () => {
       const res = await api.post('/api/chat', { 
         message: userMessage,
         chatId: currentChatId 
-      });
+      }, { timeout: 40000 }); // 40s timeout for AI response
 
       if (res.data.success) {
         setMessages(prev => [...prev, { role: 'assistant', content: res.data.response }]);
@@ -183,8 +183,14 @@ const App = () => {
       }
     } catch (error) {
       console.error('Error fetching chat response:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Error connecting to server';
-      setError(errorMsg);
+      // detect axios timeout
+      const isTimeout = error?.code === 'ECONNABORTED' || (error?.message && error.message.toLowerCase().includes('timeout'));
+      if (isTimeout) {
+        setError('AI response timed out (40s). Please try again.');
+      } else {
+        const errorMsg = error.response?.data?.message || error.message || 'Error connecting to server';
+        setError(errorMsg);
+      }
     } finally {
       setChatLoading(false);
     }

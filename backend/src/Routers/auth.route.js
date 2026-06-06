@@ -1,5 +1,6 @@
 const express = require('express');
 const { userProfile } = require('../controllers/auth.controller');
+const { isLoggedIn } = require('../middleware/auth.middleware');
 const passport = require('passport');
 
 const router = express.Router();
@@ -21,8 +22,8 @@ router.get('/google/callback',
   }
 );
 
-// session-aware profile endpoint
-router.get('/profile', userProfile);
+// session-aware profile endpoint (protected) — ensure session is valid
+router.get('/profile', isLoggedIn, userProfile);
 
 router.get('/logout', (req, res) => {
   req.logout((err) => {
