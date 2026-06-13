@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GitBranchPlus } from 'lucide-react';
 import api from '../api';
 import '../style/styles.css';
 
@@ -28,7 +27,8 @@ const LoginPage = () => {
           <p>Sign in to get started</p>
         </div>
         <button className="googleLoginBtn" onClick={() => (window.location.href = `${API_URL}/auth/google`)}>
-          <GitBranchPlus /> Sign in with Google
+          <img src="https://ik.imagekit.io/cblndrocc/search.png" alt="Google Login" width="20" height="20" />
+          Sign in with Google
         </button>
         <p className="loginFooter">Google login only for now</p>
       </div>
