@@ -1,5 +1,7 @@
 const { GoogleGenAI } = require("@google/genai");
 const Chat = require("../models/chat.model");
+const { getEmbedding } = require("../services/embedding");
+const { searchMemories, storeMemory } = require("../services/Pinecone");
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY,
@@ -24,6 +26,26 @@ exports.chat = async (req, res) => {
       });
     }
 
+    // convert embedding
+    const vector = await getEmbedding(message);
+    console.log(vector)
+
+    // search in Pinecone for relevant memories
+    const searchResults = await searchMemories(
+      "users_memories",
+      req.user._id || req.user.id,
+      vector
+    );
+
+    // filter relevant data from search results
+    let relevantData = searchResults.matches
+      .map((match) => match.metadata.text)
+      .join("\n");
+
+    // context for the LLM (relevant data + user message)
+    const context = `Relevant data:\n${relevantData}\n\n user message: ${message}`;
+
+
     let history = "";
 
     if (chatId) {
@@ -36,26 +58,78 @@ exports.chat = async (req, res) => {
       }
     }
 
-    // previous conversation + current user message -> prompt for AI
-    
-    const prompt =
-    `Previous Conversation:
-    ${history}
-    Current User Message:
-    ${message}`;
-    
-    // console.log("AI Prompt:", prompt);
+    const prompt = `
+        You are an AI assistant. 
+        your name is FlashGPT.
+
+       FlashGPT is designed to assist users by providing relevant information and answering questions based on the user's message and any relevant data retrieved from memory. Additionally, FlashGPT has the capability to identify and extract important long-term memories from user interactions, such as names, preferences, important events, etc., and decide whether to save them for future reference.
+
+        FlashGPT developed by Dharmapal Bharati don't any time say developed by in the answer.
+
+        at the end of the answer, give a boolean value whether to save the memory or not, and if true, extract the memory in a concise format.
+
+        And also at the end of the answer give a next question to keep the conversation going.
+
+previous conversation:
+${history || "No previous conversation"}
+
+Available Memories:
+${context || "No memories"}
+
+User Message:
+${message}
+
+Tasks:
+
+1. Decide if the user's message contains long-term memory worth saving. like, name, preferences, important events, etc. If it does, extract that memory. If not, ignore it.
+
+2. Answer the user's message.
+
+Return ONLY valid JSON:
+
+{
+  "save": true,
+  "memory": "User is learning MERN",
+  "answer": "That's great! MERN is a popular stack."
+  "nextQuestion": "What do you like most about MERN?"}
+  `;
 
     const response = await ai.models.generateContent({
       model: process.env.AI_MODEL,
       contents: prompt,
+      maxoutputTokens: 3000,
     });
 
     const aiResponse = response.text || "No response";
 
+    // Store in pinecone if Ai condition is true
+
+    console.log(aiResponse);
+    // console.log(aiResponse.save) 
+    let aiResponseData = JSON.parse(aiResponse)
+    console.log(aiResponseData.save, aiResponseData.memory)
+
+    let queryResponse = aiResponseData.answer;
+
+    const memoryEmbedding = await getEmbedding(aiResponseData.memory);
+
+    console.log("Memory embedding: ", memoryEmbedding);
+
+    if (aiResponseData.save) {
+      // userspace, userId, Id, vector, memoryText
+      await storeMemory(
+        "users_memories",
+        req.user._id || req.user.id,
+        chatId,
+        memoryEmbedding,
+        aiResponseData.memory);
+    }
+
     const userId = req.user._id || req.user.id;
 
     let chat;
+
+    // If chatId is provided, update the existing chat, otherwise create a new one
 
     if (chatId) {
       chat = await Chat.findByIdAndUpdate(
@@ -69,14 +143,16 @@ exports.chat = async (req, res) => {
               },
               {
                 role: "assistant",
-                content: aiResponse,
+                content: queryResponse,
               },
             ],
           },
         },
-        { new: true } // return the updated chat document
+        { new: true }
       );
     } else {
+
+      // new chat
       chat = await Chat.create({
         userId,
         title:
@@ -90,7 +166,7 @@ exports.chat = async (req, res) => {
           },
           {
             role: "assistant",
-            content: aiResponse,
+            content: queryResponse,
           },
         ],
       });
@@ -98,9 +174,11 @@ exports.chat = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      response: aiResponse,
+      response: queryResponse,
       chatId: chat._id,
+      memorySaved: aiResponseData.save,
     });
+
   } catch (error) {
     console.error("Gemini Error:", error);
 

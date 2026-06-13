@@ -1048,3 +1048,307 @@ a { color: var(--accent); text-decoration: none; }
   text-align: center;
   margin: 0;
 }
+
+
+
+
+
+/* ═══════════════════════════════════════════
+   LOGIN PAGE  —  add these to styles.css
+   Video LEFT  |  Form RIGHT
+═══════════════════════════════════════════ */
+
+/* ── Root grid ── */
+.lp-root {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 55% 45%;
+  background: #080808;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   LEFT — Video panel
+═══════════════════════════════════════════ */
+.lp-videoPanel {
+  position: relative;
+  overflow: hidden;
+  background: #050505;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* orange ambient glow */
+.lp-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 107, 43, 0.1) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+  animation: lpGlowPulse 5s ease-in-out infinite;
+}
+
+@keyframes lpGlowPulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1;   }
+}
+
+/* video element */
+.lp-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.lp-videoVisible {
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+
+.lp-videoHidden {
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* shimmer skeleton shown while video loads */
+.lp-videoSkeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 2;
+  overflow: hidden;
+  background: #050505;
+}
+
+.lp-shimmerWave {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.035) 50%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: lpShimmer 1.8s linear infinite;
+}
+
+@keyframes lpShimmer {
+  0%   { background-position: -220% 0; }
+  100% { background-position:  220% 0; }
+}
+
+.lp-loadingLabel {
+  font-size: 12px;
+  color: #333;
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 1;
+}
+
+/* error fallback */
+.lp-videoError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+}
+
+.lp-videoError span { font-size: 44px; opacity: 0.2; }
+.lp-videoError p    { font-size: 13px; color: #2a2a2a; margin: 0; }
+
+/* ═══════════════════════════════════════════
+   RIGHT — Form panel
+═══════════════════════════════════════════ */
+.lp-formPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 60px 52px;
+  gap: 32px;
+  position: relative;
+  border-left: 1px solid #141414;
+}
+
+/* ── Brand ── */
+.lp-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  top: 32px;
+  left: 52px;
+}
+
+.lp-brandIcon { font-size: 18px; line-height: 1; }
+
+.lp-brandName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f5f5f0;
+  letter-spacing: -0.01em;
+}
+
+/* ── Headline ── */
+.lp-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-tagline {
+  font-size: clamp(30px, 3vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #f5f5f0;
+  font-family: Georgia, 'Times New Roman', serif;
+  margin: 0;
+}
+
+.lp-subtitle {
+  font-size: 13px;
+  color: #555;
+  margin: 0;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+/* ── Card ── */
+.lp-card {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Google button — default state */
+.lp-googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 20px;
+  background: #f5f5f0;
+  color: #111;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.lp-googleBtn:hover:not(:disabled) {
+  background: #e8e8e3;
+  transform: translateY(-1px);
+}
+
+.lp-googleBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* loading state */
+.lp-googleBtn.lp-btnLoading {
+  background: #e8e8e3;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* error state — show "Try again" */
+.lp-googleBtn.lp-btnError {
+  background: #fff0f0;
+  color: #c0392b;
+}
+
+.lp-googleBtn.lp-btnError:hover {
+  background: #ffe8e8;
+}
+
+/* spinner inside button */
+.lp-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: #333;
+  border-radius: 50%;
+  animation: lpSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes lpSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* error message below button */
+.lp-errorMsg {
+  font-size: 12px;
+  color: #c0392b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* footer note */
+.lp-footer {
+  font-size: 12px;
+  color: #2e2e2e;
+  margin: -12px 0 0;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .lp-root {
+    grid-template-columns: 1fr;
+    grid-template-rows: 45vh 1fr;
+  }
+
+  .lp-videoPanel {
+    width: 100%;
+  }
+
+  .lp-formPanel {
+    padding: 48px 28px 40px;
+    border-left: none;
+    border-top: 1px solid #141414;
+    align-items: center;
+    text-align: center;
+  }
+
+  .lp-brand {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 20px;
+  }
+
+  .lp-card { max-width: 100%; }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .lp-shimmerWave,
+  .lp-glow,
+  .lp-spinner {
+    animation: none;
+  }
+}
