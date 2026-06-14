@@ -1,3 +1,5 @@
+// backend/src/Routers/auth.route.js
+
 const express = require('express');
 const { userProfile } = require('../controllers/auth.controller');
 const { isLoggedIn } = require('../middleware/auth.middleware');
@@ -5,10 +7,13 @@ const passport = require('passport');
 
 const router = express.Router();
 
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email']
+}
+));
 
 router.get('/google/callback', (req, res, next) => {
-  passport.authenticate('google', { failureRedirect: process.env.FRONTEND_URL || 'http://localhost:5173' }, (err, user, info) => {
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login` || 'http://localhost:5173' }, (err, user, info) => {
     if (err) {
       console.error('Google auth error:', err);
       // return JSON with error message for debugging; frontend redirect avoided during debug

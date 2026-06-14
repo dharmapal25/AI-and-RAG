@@ -1,3 +1,5 @@
+// backend/server.js
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -18,7 +20,7 @@ app.use(cors({
   origin: "https://flashgpt-ai.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
-})); 
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -46,10 +48,9 @@ app.use(session({
   store: sessionStore || undefined,
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-     sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
-     // avoid explicit domain to let the browser scope cookie to the response host
-     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: process.env.NODE_ENV === 'production', // true in prod
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-origin
+    maxAge: 7 * 24 * 60 * 60 * 1000
   }
 }));
 
