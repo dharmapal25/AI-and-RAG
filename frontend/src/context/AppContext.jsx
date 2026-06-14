@@ -19,7 +19,7 @@ export const AppProvider = ({ children }) => {
 
   const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
-  // auth — sirf ek baar
+  // auth 
   useEffect(() => {
     const fallback = setTimeout(() => setAuthLoading(false), 10000);
     (async () => {
